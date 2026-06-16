@@ -14,13 +14,24 @@
     .urgensi-Bulanan{background:#DBEAFE;color:#1E40AF;padding:2px 8px;border-radius:4px;font-size:12px;}
     .urgensi-Tahunan{background:#EDE9FE;color:#5B21B6;padding:2px 8px;border-radius:4px;font-size:12px;}
     
-    /* ✅ Status dengan warna lengkap */
     .status-Selesai{background:#DCFCE7;color:#166534;padding:2px 8px;border-radius:4px;font-size:12px;}
     .status-Sedang-Dikerjakan{background:#DBEAFE;color:#1E40AF;padding:2px 8px;border-radius:4px;font-size:12px;}
     .status-Tertunda{background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:4px;font-size:12px;}
     .status-Belum-Dimulai{background:#F3F4F6;color:#4B5563;padding:2px 8px;border-radius:4px;font-size:12px;}
-    /* ✅ Status baru: Belum Lengkap */
     .status-Belum-Lengkap{background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:4px;font-size:12px;}
+
+    /* ✅ Gaya untuk judul tabel yang bisa diklik */
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    th.sortable:hover {
+      background-color: #e5e7eb;
+    }
+    .sort-indicator {
+      margin-left: 4px;
+      font-size: 0.8em;
+    }
 
     @media (max-width: 640px) {
       h1 { font-size: 1.3rem; }
@@ -159,11 +170,22 @@
       <table class="w-full text-sm">
         <thead class="bg-gray-100">
           <tr>
-            <th class="p-2 text-left whitespace-nowrap">Tanggal</th>
-            <th class="p-2 text-left">Pekerjaan</th>
-            <th class="p-2 text-left whitespace-nowrap">Urgensi</th>
-            <th class="p-2 text-left whitespace-nowrap">Status</th>
-            <th class="p-2 text-left whitespace-nowrap">Batas Waktu</th>
+            <!-- ✅ Judul tabel bisa diklik untuk diurutkan -->
+            <th class="p-2 text-left whitespace-nowrap sortable" onclick="urutkanData('tanggalCatat')">
+              Tanggal <span id="sort-tanggalCatat" class="sort-indicator">↓</span>
+            </th>
+            <th class="p-2 text-left sortable" onclick="urutkanData('jenisPekerjaan')">
+              Pekerjaan <span id="sort-jenisPekerjaan" class="sort-indicator"></span>
+            </th>
+            <th class="p-2 text-left whitespace-nowrap sortable" onclick="urutkanData('urgensi')">
+              Urgensi <span id="sort-urgensi" class="sort-indicator"></span>
+            </th>
+            <th class="p-2 text-left whitespace-nowrap sortable" onclick="urutkanData('statusProses')">
+              Status <span id="sort-statusProses" class="sort-indicator"></span>
+            </th>
+            <th class="p-2 text-left whitespace-nowrap sortable" onclick="urutkanData('batasWaktu')">
+              Batas Waktu <span id="sort-batasWaktu" class="sort-indicator"></span>
+            </th>
             <th class="p-2 text-left whitespace-nowrap">Aksi</th>
           </tr>
         </thead>
@@ -175,6 +197,9 @@
   <script>
     const GS_URL = "https://script.google.com/macros/s/AKfycbzA0t6RRA39xuQNP3yj-a7gm5lcUWHlUumyQPu09MtvY_3RUwBOsGUvzpJJaCZ84bvB/exec";
     let semuaData = [];
+    // ✅ Variabel untuk pengurutan
+    let kolomUrut = 'tanggalCatat';
+    let arahUrut = 'desc'; // default: terbaru ke terlama
 
     function perbaikiTanggal(tanggalInput) {
       if (!tanggalInput) return "";
@@ -375,13 +400,56 @@
       const filterUrgensi = document.getElementById('filterUrgensi').value;
       const filterStatus = document.getElementById('filterStatus').value;
 
-      const dataTampil = semuaData.filter(item => {
+      let dataTampil = semuaData.filter(item => {
         const cocokUrgensi = !filterUrgensi || item.urgensi === filterUrgensi;
         const cocokStatus = !filterStatus || item.statusProses === filterStatus;
         return cocokUrgensi && cocokStatus;
       });
 
+      // ✅ Terapkan pengurutan ke data yang sudah difilter
+      dataTampil = urutkanDataDalamArray(dataTampil, kolomUrut, arahUrut);
       tampilkanData(dataTampil);
+    }
+
+    // ✅ Fungsi untuk mengatur pengurutan saat judul diklik
+    function urutkanData(kunci) {
+      if (kolomUrut === kunci) {
+        // Balik arah jika kolom yang sama diklik
+        arahUrut = arahUrut === 'asc' ? 'desc' : 'asc';
+      } else {
+        kolomUrut = kunci;
+        // Default urutan: tanggal = terbaru dulu, teks = A-Z
+        arahUrut = (kunci === 'tanggalCatat' || kunci === 'batasWaktu') ? 'desc' : 'asc';
+      }
+
+      // Perbarui tampilan panah indikator
+      document.querySelectorAll('.sort-indicator').forEach(el => el.textContent = '');
+      const indikator = document.getElementById(`sort-${kunci}`);
+      indikator.textContent = arahUrut === 'asc' ? '↑' : '↓';
+
+      terapkanFilter();
+    }
+
+    // ✅ Fungsi pembanding untuk mengurutkan data
+    function urutkanDataDalamArray(arr, kunci, arah) {
+      return arr.sort((a, b) => {
+        let nilaiA = a[kunci] || '';
+        let nilaiB = b[kunci] || '';
+
+        // Khusus tanggal
+        if (kunci === 'tanggalCatat' || kunci === 'batasWaktu') {
+          nilaiA = new Date(perbaikiTanggal(nilaiA)) || 0;
+          nilaiB = new Date(perbaikiTanggal(nilaiB)) || 0;
+        } else {
+          // Khusus teks, buat huruf kecil agar tidak peka besar-kecil
+          nilaiA = nilaiA.toString().toLowerCase();
+          nilaiB = nilaiB.toString().toLowerCase();
+        }
+
+        if (nilaiA < nilaiB) return arah === 'asc' ? -1 : 1;
+        if (nilaiA > nilaiB) return arah === 'asc' ? 1 : -1;
+        return 0;
+      });
     }
 
     function tampilkanData(data) {
