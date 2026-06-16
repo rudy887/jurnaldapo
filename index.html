@@ -33,6 +33,14 @@
       font-size: 0.8em;
     }
 
+    /* ✅ Agar teks panjang di kolom Pekerjaan terbungkus */
+    .wrap-text {
+      white-space: normal !important;
+      word-wrap: break-word;
+      word-break: break-word;
+      max-width: 250px;
+    }
+
     @media (max-width: 640px) {
       h1 { font-size: 1.3rem; }
       .modal-content { padding: 1rem; }
@@ -41,6 +49,7 @@
       table th, table td { padding: 0.5rem 0.3rem; }
       .btn { padding: 0.5rem 0.75rem; font-size: 0.875rem; }
       .aksi-btn { display: flex; flex-direction: column; gap: 0.3rem; }
+      .wrap-text { max-width: 150px; }
     }
   </style>
 </head>
@@ -170,7 +179,6 @@
       <table class="w-full text-sm">
         <thead class="bg-gray-100">
           <tr>
-            <!-- ✅ Judul tabel bisa diklik untuk diurutkan -->
             <th class="p-2 text-left whitespace-nowrap sortable" onclick="urutkanData('tanggalCatat')">
               Tanggal <span id="sort-tanggalCatat" class="sort-indicator">↓</span>
             </th>
@@ -197,9 +205,8 @@
   <script>
     const GS_URL = "https://script.google.com/macros/s/AKfycbzA0t6RRA39xuQNP3yj-a7gm5lcUWHlUumyQPu09MtvY_3RUwBOsGUvzpJJaCZ84bvB/exec";
     let semuaData = [];
-    // ✅ Variabel untuk pengurutan
     let kolomUrut = 'tanggalCatat';
-    let arahUrut = 'desc'; // default: terbaru ke terlama
+    let arahUrut = 'desc';
 
     function perbaikiTanggal(tanggalInput) {
       if (!tanggalInput) return "";
@@ -406,23 +413,18 @@
         return cocokUrgensi && cocokStatus;
       });
 
-      // ✅ Terapkan pengurutan ke data yang sudah difilter
       dataTampil = urutkanDataDalamArray(dataTampil, kolomUrut, arahUrut);
       tampilkanData(dataTampil);
     }
 
-    // ✅ Fungsi untuk mengatur pengurutan saat judul diklik
     function urutkanData(kunci) {
       if (kolomUrut === kunci) {
-        // Balik arah jika kolom yang sama diklik
         arahUrut = arahUrut === 'asc' ? 'desc' : 'asc';
       } else {
         kolomUrut = kunci;
-        // Default urutan: tanggal = terbaru dulu, teks = A-Z
         arahUrut = (kunci === 'tanggalCatat' || kunci === 'batasWaktu') ? 'desc' : 'asc';
       }
 
-      // Perbarui tampilan panah indikator
       document.querySelectorAll('.sort-indicator').forEach(el => el.textContent = '');
       const indikator = document.getElementById(`sort-${kunci}`);
       indikator.textContent = arahUrut === 'asc' ? '↑' : '↓';
@@ -430,18 +432,15 @@
       terapkanFilter();
     }
 
-    // ✅ Fungsi pembanding untuk mengurutkan data
     function urutkanDataDalamArray(arr, kunci, arah) {
       return arr.sort((a, b) => {
         let nilaiA = a[kunci] || '';
         let nilaiB = b[kunci] || '';
 
-        // Khusus tanggal
         if (kunci === 'tanggalCatat' || kunci === 'batasWaktu') {
           nilaiA = new Date(perbaikiTanggal(nilaiA)) || 0;
           nilaiB = new Date(perbaikiTanggal(nilaiB)) || 0;
         } else {
-          // Khusus teks, buat huruf kecil agar tidak peka besar-kecil
           nilaiA = nilaiA.toString().toLowerCase();
           nilaiB = nilaiB.toString().toLowerCase();
         }
@@ -467,15 +466,16 @@
         
         html += `
           <tr class="border-t hover:bg-gray-50">
-            <td class="p-2">${tglTampil}</td>
-            <td class="p-2">
+            <td class="p-2 whitespace-nowrap">${tglTampil}</td>
+            <!-- ✅ Kolom Pekerjaan dengan wrap teks -->
+            <td class="p-2 wrap-text">
               <div class="font-medium">${item.jenisPekerjaan}</div>
-              <div class="text-xs text-gray-500 mt-1 line-clamp-2">${item.detailPekerjaan}</div>
+              <div class="text-xs text-gray-500 mt-1">${item.detailPekerjaan}</div>
             </td>
-            <td class="p-2"><span class="urgensi-${item.urgensi}">${item.urgensi}</span></td>
-            <td class="p-2"><span class="${statusClass}">${item.statusProses}</span></td>
-            <td class="p-2 ${merah}">${tglBatasTampil}</td>
-            <td class="p-2 aksi-btn">
+            <td class="p-2 whitespace-nowrap"><span class="urgensi-${item.urgensi}">${item.urgensi}</span></td>
+            <td class="p-2 whitespace-nowrap"><span class="${statusClass}">${item.statusProses}</span></td>
+            <td class="p-2 whitespace-nowrap ${merah}">${tglBatasTampil}</td>
+            <td class="p-2 aksi-btn whitespace-nowrap">
               <button onclick='bukaDetail(${JSON.stringify(item).replace(/'/g, "&#39;")})' class="text-green-600 text-xs md:text-sm" title="Lihat Detail">
                 <i class="fa fa-eye"></i>
               </button>
