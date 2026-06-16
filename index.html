@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <!-- ✅ Tag wajib agar tampilan responsif di HP -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Jurnal Dapodik</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script>tailwind.config={theme:{extend:{colors:{primary:'#165DFF'}}}}</script>
+  <style>
+    .urgensi-Prioritas{background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:4px;font-size:12px;}
+    .urgensi-Biasa{background:#DCFCE7;color:#166534;padding:2px 8px;border-radius:4px;font-size:12px;}
+    .urgensi-Berkala{background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:4px;font-size:12px;}
+    .urgensi-Bulanan{background:#DBEAFE;color:#1E40AF;padding:2px 8px;border-radius:4px;font-size:12px;}
+    .urgensi-Tahunan{background:#EDE9FE;color:#5B21B6;padding:2px 8px;border-radius:4px;font-size:12px;}
+    .status-Selesai{background:#DCFCE7;color:#166534;padding:2px 8px;border-radius:4px;font-size:12px;}
+    .status-Sedang-Dikerjakan{background:#DBEAFE;color:#1E40AF;padding:2px 8px;border-radius:4px;font-size:12px;}
+    .status-Tertunda{background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:4px;font-size:12px;}
+    .status-Belum-Dimulai{background:#F3F4F6;color:#4B5563;padding:2px 8px;border-radius:4px;font-size:12px;}
+    
+    /* ✅ Perbaikan tampilan HP */
+    @media (max-width: 640px) {
+      h1 { font-size: 1.3rem; }
+      .modal-content { padding: 1rem; }
+      .grid-cols-2 { grid-template-columns: 1fr; }
+      table { font-size: 0.75rem; }
+      table th, table td { padding: 0.5rem 0.3rem; }
+      .btn { padding: 0.5rem 0.75rem; font-size: 0.875rem; }
+      .aksi-btn { display: flex; flex-direction: column; gap: 0.3rem; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 p-3 md:p-4">
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-xl md:text-2xl font-bold text-primary mb-3 md:mb-4 flex items-center gap-2">
+      <i class="fa fa-book"></i> Jurnal Pekerjaan Operator Dapodik
+    </h1>
+
+    <button onclick="bukaForm()" class="bg-primary text-white px-3 py-2 md:px-4 md:py-2 rounded mb-3 md:mb-4 w-full md:w-auto">
+      <i class="fa fa-plus"></i> Tambah Pekerjaan
+    </button>
+
+    <!-- Filter -->
+    <div class="flex flex-wrap gap-2 md:gap-3 mb-3 md:mb-4">
+      <select id="filterUrgensi" onchange="terapkanFilter()" class="border p-2 rounded flex-1 min-w-[140px]">
+        <option value="">Semua Urgensi</option>
+        <option>Prioritas</option>
+        <option>Biasa</option>
+        <option>Berkala</option>
+        <option>Bulanan</option>
+        <option>Tahunan</option>
+      </select>
+      <select id="filterStatus" onchange="terapkanFilter()" class="border p-2 rounded flex-1 min-w-[140px]">
+        <option value="">Semua Status</option>
+        <option>Belum Dimulai</option>
+        <option>Sedang Dikerjakan</option>
+        <option>Tertunda</option>
+        <option>Selesai</option>
+      </select>
+    </div>
+
+    <!-- Modal Tambah/Edit -->
+    <div id="modalForm" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-3 z-20">
+      <div class="bg-white rounded-lg p-4 md:p-6 w-full max-w-xl modal-content max-h-[95vh] overflow-y-auto">
+        <h3 id="judulForm" class="text-lg md:text-xl font-semibold mb-3 md:mb-4">Tambah Pekerjaan</h3>
+        <input type="hidden" id="idData" value="">
+
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="block text-sm mb-1">Tanggal Catat</label>
+            <input type="date" id="tanggal" required class="w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Batas Waktu</label>
+            <input type="date" id="batas" required class="w-full border p-2 rounded">
+          </div>
+        </div>
+
+        <!-- Jenis Pekerjaan -->
+        <div class="mb-3">
+          <label class="block text-sm mb-1">Jenis Pekerjaan</label>
+          <select id="jenisSelect" required onchange="cekJenisLainnya()" class="w-full border p-2 rounded">
+            <option value="">Pilih Jenis</option>
+            <option value="Dapodik">Dapodik</option>
+            <option value="Verval PD">Verval PD</option>
+            <option value="Verval PTK">Verval PTK</option>
+            <option value="Sinkron Dapodik">Sinkron Dapodik</option>
+            <option value="Tarik Data">Tarik Data</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+
+        <!-- Input Lainnya -->
+        <div id="inputLainnya" class="mb-3 hidden">
+          <label class="block text-sm mb-1">Sebutkan Jenis Pekerjaan</label>
+          <input type="text" id="jenisLainnya" placeholder="Contoh: Pelaporan, Administrasi, dll" class="w-full border p-2 rounded">
+        </div>
+
+        <div class="mb-3">
+          <label class="block text-sm mb-1">Detail Pekerjaan</label>
+          <textarea id="detail" required class="w-full border p-2 rounded" rows="2"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="block text-sm mb-1">Urgensi</label>
+            <select id="urgensi" required class="w-full border p-2 rounded">
+              <option value="">Pilih</option>
+              <option>Prioritas</option>
+              <option>Biasa</option>
+              <option>Berkala</option>
+              <option>Bulanan</option>
+              <option>Tahunan</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Status Proses</label>
+            <select id="status" required class="w-full border p-2 rounded">
+              <option value="">Pilih</option>
+              <option>Belum Dimulai</option>
+              <option>Sedang Dikerjakan</option>
+              <option>Tertunda</option>
+              <option>Selesai</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm mb-1">Keterangan Pelaporan</label>
+          <textarea id="keterangan" class="w-full border p-2 rounded" rows="2"></textarea>
+        </div>
+
+        <div class="flex gap-2 flex-col sm:flex-row">
+          <button onclick="prosesSimpan()" class="bg-primary text-white px-4 py-2 rounded w-full sm:w-auto">Simpan</button>
+          <button onclick="tutupForm()" class="border px-4 py-2 rounded w-full sm:w-auto">Batal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Detail -->
+    <div id="modalDetail" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-3 z-30">
+      <div class="bg-white rounded-lg p-4 md:p-6 w-full max-w-2xl max-h-[95vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-3 md:mb-4">
+          <h3 class="text-lg md:text-xl font-semibold text-primary">Detail Jurnal Pekerjaan</h3>
+          <button onclick="tutupDetail()" class="text-gray-500 hover:text-red-500 text-xl">&times;</button>
+        </div>
+        <div id="isiDetail" class="space-y-3 text-sm md:text-base"></div>
+        <div class="mt-4 md:mt-6 flex justify-end">
+          <button onclick="tutupDetail()" class="border px-4 py-2 rounded w-full sm:w-auto">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabel Data -->
+    <div class="bg-white rounded shadow overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="p-2 text-left whitespace-nowrap">Tanggal</th>
+            <th class="p-2 text-left">Pekerjaan</th>
+            <th class="p-2 text-left whitespace-nowrap">Urgensi</th>
+            <th class="p-2 text-left whitespace-nowrap">Status</th>
+            <th class="p-2 text-left whitespace-nowrap">Batas Waktu</th>
+            <th class="p-2 text-left whitespace-nowrap">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tabelData"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // 👇 GANTI DENGAN URL ANDA SENDIRI
+    const GS_URL = "https://script.google.com/macros/s/AKfycbzA0t6RRA39xuQNP3yj-a7gm5lcUWHlUumyQPu09MtvY_3RUwBOsGUvzpJJaCZ84bvB/exec";
+    let semuaData = [];
+
+    // ✅ Perbaiki zona waktu UTC+8 agar tanggal tidak mundur
+    function perbaikiTanggal(tanggalInput) {
+      if (!tanggalInput) return "";
+      try {
+        const tgl = new Date(tanggalInput);
+        if (!isNaN(tgl.getTime())) {
+          const tglIndo = new Date(tgl.getTime() + (8 * 60 * 60 * 1000));
+          return tglIndo.toISOString().split('T')[0];
+        }
+        const bagian = tanggalInput.split('/');
+        if (bagian.length === 3) {
+          return `${bagian[2]}-${bagian[1].padStart(2, '0')}-${bagian[0].padStart(2, '0')}`;
+        }
+        return tanggalInput;
+      } catch (e) {
+        return tanggalInput || "";
+      }
+    }
+
+    function formatTanggalTampilan(tanggalInput) {
+      return perbaikiTanggal(tanggalInput);
+    }
+
+    // Panggil API
+    function panggilAPI(aksi, data = {}, callback) {
+      const params = new URLSearchParams({ aksi, ...data, callback: "prosesHasilAPI" });
+      const script = document.createElement("script");
+      script.src = `${GS_URL}?${params.toString()}`;
+      document.body.appendChild(script);
+      script.onload = () => document.body.removeChild(script);
+      window.prosesHasilAPI = callback;
+    }
+
+    function cekJenisLainnya() {
+      const nilai = document.getElementById('jenisSelect').value;
+      const inputLainnya = document.getElementById('inputLainnya');
+      const inputTeks = document.getElementById('jenisLainnya');
+      
+      if (nilai === "Lainnya") {
+        inputLainnya.classList.remove('hidden');
+        inputTeks.required = true;
+      } else {
+        inputLainnya.classList.add('hidden');
+        inputTeks.required = false;
+        inputTeks.value = "";
+      }
+    }
+
+    function bukaForm() {
+      document.getElementById('idData').value = "";
+      const hariIni = new Date();
+      document.getElementById('tanggal').value = hariIni.toISOString().split('T')[0];
+      document.getElementById('batas').value = "";
+      
+      document.getElementById('jenisSelect').value = "";
+      document.getElementById('jenisLainnya').value = "";
+      document.getElementById('inputLainnya').classList.add('hidden');
+      document.getElementById('detail').value = "";
+      document.getElementById('urgensi').value = "";
+      document.getElementById('status').value = "";
+      document.getElementById('keterangan').value = "";
+      document.getElementById('judulForm').textContent = "Tambah Pekerjaan";
+      document.getElementById('modalForm').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function bukaEdit(item) {
+      document.getElementById('idData').value = item.id;
+      document.getElementById('tanggal').value = perbaikiTanggal(item.tanggalCatat);
+      document.getElementById('batas').value = perbaikiTanggal(item.batasWaktu);
+      
+      const jenis = item.jenisPekerjaan;
+      const select = document.getElementById('jenisSelect');
+      const inputLainnya = document.getElementById('inputLainnya');
+      const teksLainnya = document.getElementById('jenisLainnya');
+      
+      if (["Dapodik", "Verval PD", "Verval PTK", "Sinkron Dapodik", "Tarik Data"].includes(jenis)) {
+        select.value = jenis;
+        inputLainnya.classList.add('hidden');
+        teksLainnya.value = "";
+      } else {
+        select.value = "Lainnya";
+        inputLainnya.classList.remove('hidden');
+        teksLainnya.value = jenis;
+      }
+
+      document.getElementById('detail').value = item.detailPekerjaan;
+      document.getElementById('urgensi').value = item.urgensi;
+      document.getElementById('status').value = item.statusProses;
+      document.getElementById('keterangan').value = item.keterangan;
+      document.getElementById('judulForm').textContent = "Edit Pekerjaan";
+      document.getElementById('modalForm').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function bukaDetail(item) {
+      const tglCatat = formatTanggalTampilan(item.tanggalCatat);
+      const tglBatas = formatTanggalTampilan(item.batasWaktu);
+      
+      const isi = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <p class="text-sm text-gray-500">Tanggal Catat</p>
+            <p class="font-medium">${tglCatat || '-'}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Batas Waktu</p>
+            <p class="font-medium ${tglBatas < new Date().toISOString().split('T')[0] && item.statusProses !== "Selesai" ? 'text-red-600' : ''}">
+              ${tglBatas || '-'}
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-sm text-gray-500">Jenis Pekerjaan</p>
+          <p class="font-medium">${item.jenisPekerjaan || '-'}</p>
+        </div>
+
+        <div>
+          <p class="text-sm text-gray-500">Detail Pekerjaan</p>
+          <p class="bg-gray-50 p-3 rounded whitespace-pre-wrap">${item.detailPekerjaan || '-'}</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <p class="text-sm text-gray-500">Tingkat Urgensi</p>
+            <span class="urgensi-${item.urgensi} inline-block mt-1">${item.urgensi || '-'}</span>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Status Proses</p>
+            <span class="status-${item.statusProses.replace(" ", "-")} inline-block mt-1">${item.statusProses || '-'}</span>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-sm text-gray-500">Keterangan Pelaporan</p>
+          <p class="bg-gray-50 p-3 rounded whitespace-pre-wrap">${item.keterangan || 'Tidak ada keterangan'}</p>
+        </div>
+      `;
+      document.getElementById('isiDetail').innerHTML = isi;
+      document.getElementById('modalDetail').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function tutupForm() {
+      document.getElementById('modalForm').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+
+    function tutupDetail() {
+      document.getElementById('modalDetail').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+
+    function prosesSimpan() {
+      let jenisAkhir = document.getElementById('jenisSelect').value;
+      if (jenisAkhir === "Lainnya") {
+        jenisAkhir = document.getElementById('jenisLainnya').value.trim();
+        if (!jenisAkhir) {
+          alert("Silakan sebutkan jenis pekerjaan!");
+          return;
+        }
+      }
+
+      const id = document.getElementById('idData').value;
+      const data = {
+        tanggal: document.getElementById('tanggal').value,
+        jenis: jenisAkhir,
+        detail: document.getElementById('detail').value,
+        urgensi: document.getElementById('urgensi').value,
+        status: document.getElementById('status').value,
+        batas: document.getElementById('batas').value,
+        keterangan: document.getElementById('keterangan').value
+      };
+
+      if (id) {
+        panggilAPI("perbarui", { id: id, ...data }, (res) => {
+          alert(res.pesan);
+          if (res.sukses) { tutupForm(); muatData(); }
+        });
+      } else {
+        panggilAPI("simpan", data, (res) => {
+          alert(res.pesan);
+          if (res.sukses) { tutupForm(); muatData(); }
+        });
+      }
+    }
+
+    function muatData() {
+      panggilAPI("ambilSemua", {}, (data) => {
+        semuaData = data || [];
+        terapkanFilter();
+      });
+    }
+
+    function terapkanFilter() {
+      const filterUrgensi = document.getElementById('filterUrgensi').value;
+      const filterStatus = document.getElementById('filterStatus').value;
+
+      const dataTampil = semuaData.filter(item => {
+        const cocokUrgensi = !filterUrgensi || item.urgensi === filterUrgensi;
+        const cocokStatus = !filterStatus || item.statusProses === filterStatus;
+        return cocokUrgensi && cocokStatus;
+      });
+
+      tampilkanData(dataTampil);
+    }
+
+    function tampilkanData(data) {
+      if (!data || data.length === 0) {
+        document.getElementById('tabelData').innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Belum ada data pekerjaan</td></tr>`;
+        return;
+      }
+
+      let html = "";
+      data.forEach(item => {
+        const tglTampil = formatTanggalTampilan(item.tanggalCatat);
+        const tglBatasTampil = formatTanggalTampilan(item.batasWaktu);
+        const merah = tglBatasTampil < new Date().toISOString().split('T')[0] && item.statusProses !== "Selesai" ? "text-red-600 font-medium" : "";
+        
+        html += `
+          <tr class="border-t hover:bg-gray-50">
+            <td class="p-2">${tglTampil}</td>
+            <td class="p-2">
+              <div class="font-medium">${item.jenisPekerjaan}</div>
+              <div class="text-xs text-gray-500 mt-1 line-clamp-2">${item.detailPekerjaan}</div>
+            </td>
+            <td class="p-2"><span class="urgensi-${item.urgensi}">${item.urgensi}</span></td>
+            <td class="p-2"><span class="status-${item.statusProses.replace(" ", "-")}">${item.statusProses}</span></td>
+            <td class="p-2 ${merah}">${tglBatasTampil}</td>
+            <td class="p-2 aksi-btn">
+              <button onclick='bukaDetail(${JSON.stringify(item).replace(/'/g, "&#39;")})' class="text-green-600 text-xs md:text-sm" title="Lihat Detail">
+                <i class="fa fa-eye"></i>
+              </button>
+              <button onclick='bukaEdit(${JSON.stringify(item).replace(/'/g, "&#39;")})' class="text-blue-600 text-xs md:text-sm" title="Edit">
+                <i class="fa fa-pencil"></i>
+              </button>
+              <button onclick="hapusData(${item.id})" class="text-red-600 text-xs md:text-sm" title="Hapus">
+                <i class="fa fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      document.getElementById('tabelData').innerHTML = html;
+    }
+
+    function hapusData(id) {
+      if (confirm("Yakin ingin menghapus data ini?")) {
+        panggilAPI("hapus", { id: id }, (res) => {
+          alert(res.pesan);
+          if (res.sukses) muatData();
+        });
+      }
+    }
+
+    window.onload = muatData;
+  </script>
+</body>
+</html>
