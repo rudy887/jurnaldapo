@@ -2,7 +2,6 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <!-- ✅ Tag wajib agar tampilan responsif di HP -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>Jurnal Dapodik</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,12 +13,15 @@
     .urgensi-Berkala{background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:4px;font-size:12px;}
     .urgensi-Bulanan{background:#DBEAFE;color:#1E40AF;padding:2px 8px;border-radius:4px;font-size:12px;}
     .urgensi-Tahunan{background:#EDE9FE;color:#5B21B6;padding:2px 8px;border-radius:4px;font-size:12px;}
+    
+    /* ✅ Status dengan warna lengkap */
     .status-Selesai{background:#DCFCE7;color:#166534;padding:2px 8px;border-radius:4px;font-size:12px;}
     .status-Sedang-Dikerjakan{background:#DBEAFE;color:#1E40AF;padding:2px 8px;border-radius:4px;font-size:12px;}
     .status-Tertunda{background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:4px;font-size:12px;}
     .status-Belum-Dimulai{background:#F3F4F6;color:#4B5563;padding:2px 8px;border-radius:4px;font-size:12px;}
-    
-    /* ✅ Perbaikan tampilan HP */
+    /* ✅ Status baru: Belum Lengkap */
+    .status-Belum-Lengkap{background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:4px;font-size:12px;}
+
     @media (max-width: 640px) {
       h1 { font-size: 1.3rem; }
       .modal-content { padding: 1rem; }
@@ -38,7 +40,7 @@
     </h1>
 
     <button onclick="bukaForm()" class="bg-primary text-white px-3 py-2 md:px-4 md:py-2 rounded mb-3 md:mb-4 w-full md:w-auto">
-      <i class="fa fa-plus"></i> Tambah Pekerjaan
+      <i class="fa fa-plus"></i> Tambah Record
     </button>
 
     <!-- Filter -->
@@ -57,13 +59,14 @@
         <option>Sedang Dikerjakan</option>
         <option>Tertunda</option>
         <option>Selesai</option>
+        <option>Belum Lengkap</option>
       </select>
     </div>
 
     <!-- Modal Tambah/Edit -->
     <div id="modalForm" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-3 z-20">
       <div class="bg-white rounded-lg p-4 md:p-6 w-full max-w-xl modal-content max-h-[95vh] overflow-y-auto">
-        <h3 id="judulForm" class="text-lg md:text-xl font-semibold mb-3 md:mb-4">Tambah Pekerjaan</h3>
+        <h3 id="judulForm" class="text-lg md:text-xl font-semibold mb-3 md:mb-4">Tambah Record</h3>
         <input type="hidden" id="idData" value="">
 
         <div class="grid grid-cols-2 gap-3 mb-3">
@@ -77,7 +80,6 @@
           </div>
         </div>
 
-        <!-- Jenis Pekerjaan -->
         <div class="mb-3">
           <label class="block text-sm mb-1">Jenis Pekerjaan</label>
           <select id="jenisSelect" required onchange="cekJenisLainnya()" class="w-full border p-2 rounded">
@@ -91,7 +93,6 @@
           </select>
         </div>
 
-        <!-- Input Lainnya -->
         <div id="inputLainnya" class="mb-3 hidden">
           <label class="block text-sm mb-1">Sebutkan Jenis Pekerjaan</label>
           <input type="text" id="jenisLainnya" placeholder="Contoh: Pelaporan, Administrasi, dll" class="w-full border p-2 rounded">
@@ -122,6 +123,7 @@
               <option>Sedang Dikerjakan</option>
               <option>Tertunda</option>
               <option>Selesai</option>
+              <option>Belum Lengkap</option>
             </select>
           </div>
         </div>
@@ -171,11 +173,9 @@
   </div>
 
   <script>
-    // 👇 GANTI DENGAN URL ANDA SENDIRI
     const GS_URL = "https://script.google.com/macros/s/AKfycbzA0t6RRA39xuQNP3yj-a7gm5lcUWHlUumyQPu09MtvY_3RUwBOsGUvzpJJaCZ84bvB/exec";
     let semuaData = [];
 
-    // ✅ Perbaiki zona waktu UTC+8 agar tanggal tidak mundur
     function perbaikiTanggal(tanggalInput) {
       if (!tanggalInput) return "";
       try {
@@ -198,7 +198,6 @@
       return perbaikiTanggal(tanggalInput);
     }
 
-    // Panggil API
     function panggilAPI(aksi, data = {}, callback) {
       const params = new URLSearchParams({ aksi, ...data, callback: "prosesHasilAPI" });
       const script = document.createElement("script");
@@ -236,7 +235,7 @@
       document.getElementById('urgensi').value = "";
       document.getElementById('status').value = "";
       document.getElementById('keterangan').value = "";
-      document.getElementById('judulForm').textContent = "Tambah Pekerjaan";
+      document.getElementById('judulForm').textContent = "Tambah Record";
       document.getElementById('modalForm').classList.remove('hidden');
       document.body.style.overflow = 'hidden';
     }
@@ -274,6 +273,8 @@
       const tglCatat = formatTanggalTampilan(item.tanggalCatat);
       const tglBatas = formatTanggalTampilan(item.batasWaktu);
       
+      const statusClass = `status-${item.statusProses.replace(/ /g, '-')}`;
+      
       const isi = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
@@ -282,7 +283,7 @@
           </div>
           <div>
             <p class="text-sm text-gray-500">Batas Waktu</p>
-            <p class="font-medium ${tglBatas < new Date().toISOString().split('T')[0] && item.statusProses !== "Selesai" ? 'text-red-600' : ''}">
+            <p class="font-medium ${tglBatas < new Date().toISOString().split('T')[0] && item.statusProses !== "Selesai" && item.statusProses !== "Belum Lengkap" ? 'text-red-600' : ''}">
               ${tglBatas || '-'}
             </p>
           </div>
@@ -305,7 +306,7 @@
           </div>
           <div>
             <p class="text-sm text-gray-500">Status Proses</p>
-            <span class="status-${item.statusProses.replace(" ", "-")} inline-block mt-1">${item.statusProses || '-'}</span>
+            <span class="${statusClass} inline-block mt-1">${item.statusProses || '-'}</span>
           </div>
         </div>
 
@@ -393,7 +394,8 @@
       data.forEach(item => {
         const tglTampil = formatTanggalTampilan(item.tanggalCatat);
         const tglBatasTampil = formatTanggalTampilan(item.batasWaktu);
-        const merah = tglBatasTampil < new Date().toISOString().split('T')[0] && item.statusProses !== "Selesai" ? "text-red-600 font-medium" : "";
+        const statusClass = `status-${item.statusProses.replace(/ /g, '-')}`;
+        const merah = tglBatasTampil < new Date().toISOString().split('T')[0] && item.statusProses !== "Selesai" && item.statusProses !== "Belum Lengkap" ? "text-red-600 font-medium" : "";
         
         html += `
           <tr class="border-t hover:bg-gray-50">
@@ -403,7 +405,7 @@
               <div class="text-xs text-gray-500 mt-1 line-clamp-2">${item.detailPekerjaan}</div>
             </td>
             <td class="p-2"><span class="urgensi-${item.urgensi}">${item.urgensi}</span></td>
-            <td class="p-2"><span class="status-${item.statusProses.replace(" ", "-")}">${item.statusProses}</span></td>
+            <td class="p-2"><span class="${statusClass}">${item.statusProses}</span></td>
             <td class="p-2 ${merah}">${tglBatasTampil}</td>
             <td class="p-2 aksi-btn">
               <button onclick='bukaDetail(${JSON.stringify(item).replace(/'/g, "&#39;")})' class="text-green-600 text-xs md:text-sm" title="Lihat Detail">
