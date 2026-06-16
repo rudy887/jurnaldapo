@@ -8,6 +8,8 @@
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+  <!-- ✅ Pustaka untuk Drag & Drop -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <script>tailwind.config={theme:{extend:{colors:{primary:'#165DFF'}}}}</script>
   <style>
     .urgensi-Prioritas{background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:4px;font-size:12px;}
@@ -22,18 +24,6 @@
     .status-Belum-Dimulai{background:#F3F4F6;color:#4B5563;padding:2px 8px;border-radius:4px;font-size:12px;}
     .status-Belum-Lengkap{background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:4px;font-size:12px;}
 
-    th.sortable {
-      cursor: pointer;
-      user-select: none;
-    }
-    th.sortable:hover {
-      background-color: #e5e7eb;
-    }
-    .sort-indicator {
-      margin-left: 4px;
-      font-size: 0.8em;
-    }
-
     .kolom-pekerjaan {
       min-width: 280px;
       max-width: 350px;
@@ -46,6 +36,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      flex-wrap: wrap;
     }
     .aksi-btn {
       display: inline-flex;
@@ -78,6 +69,26 @@
       color: #dc2626;
       border-color: #fecaca;
       background-color: #fef2f2;
+    }
+    .pegangan-drag {
+      color: #6b7280;
+      cursor: grab;
+      font-size: 1.1rem;
+      padding: 4px 8px;
+    }
+    .pegangan-drag:active {
+      cursor: grabbing;
+    }
+    .baris-drag {
+      transition: all 0.2s ease;
+    }
+    .baris-drag.sortable-ghost {
+      opacity: 0.6;
+      background-color: #e0f2fe;
+    }
+    .baris-drag.sortable-chosen {
+      background-color: #f0f9ff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
     .btn-export {
       background-color: #10b981;
@@ -162,21 +173,12 @@
       <table>
         <thead class="bg-gray-100">
           <tr>
-            <th class="text-left sortable" onclick="urutkanData('tanggalCatat')">
-              Tanggal <span id="sort-tanggalCatat" class="sort-indicator">↓</span>
-            </th>
-            <th class="text-left sortable" onclick="urutkanData('jenisPekerjaan')">
-              Pekerjaan <span id="sort-jenisPekerjaan" class="sort-indicator"></span>
-            </th>
-            <th class="text-left sortable" onclick="urutkanData('urgensi')">
-              Urgensi <span id="sort-urgensi" class="sort-indicator"></span>
-            </th>
-            <th class="text-left sortable" onclick="urutkanData('statusProses')">
-              Status <span id="sort-statusProses" class="sort-indicator"></span>
-            </th>
-            <th class="text-left sortable" onclick="urutkanData('batasWaktu')">
-              Batas Waktu <span id="sort-batasWaktu" class="sort-indicator"></span>
-            </th>
+            <th class="text-left w-10">Urut</th>
+            <th class="text-left">Tanggal</th>
+            <th class="text-left">Pekerjaan</th>
+            <th class="text-left">Urgensi</th>
+            <th class="text-left">Status</th>
+            <th class="text-left">Batas Waktu</th>
             <th class="text-left">Aksi</th>
           </tr>
         </thead>
@@ -284,10 +286,9 @@
   </div>
 
   <script>
-    const GS_URL = "https://script.google.com/macros/s/AKfycbzA0t6RRA39xuQNP3yj-a7gm5lcUWHlUumyQPu09MtvY_3RUwBOsGUvzpJJaCZ84bvB/exec";
+    const GS_URL = "https://script.google.com/macros/s/AKfycbz4bAfdZhoSLJ2kfLC0Aue4cRgvx7ErN2eRDN_Bn8ADCemr11ybXrYpCty4Bc9P6iG6/exec";
     let semuaData = [];
-    let kolomUrut = 'tanggalCatat';
-    let arahUrut = 'desc';
+    let sortable;
 
     function perbaikiTanggal(tanggalInput) {
       if (!tanggalInput) return "";
@@ -494,59 +495,27 @@
         return cocokUrgensi && cocokStatus;
       });
 
-      dataTampil = urutkanDataDalamArray(dataTampil, kolomUrut, arahUrut);
       tampilkanData(dataTampil);
-    }
-
-    function urutkanData(kunci) {
-      if (kolomUrut === kunci) {
-        arahUrut = arahUrut === 'asc' ? 'desc' : 'asc';
-      } else {
-        kolomUrut = kunci;
-        arahUrut = (kunci === 'tanggalCatat' || kunci === 'batasWaktu') ? 'desc' : 'asc';
-      }
-
-      document.querySelectorAll('.sort-indicator').forEach(el => el.textContent = '');
-      const indikator = document.getElementById(`sort-${kunci}`);
-      indikator.textContent = arahUrut === 'asc' ? '↑' : '↓';
-
-      terapkanFilter();
-    }
-
-    function urutkanDataDalamArray(arr, kunci, arah) {
-      return arr.sort((a, b) => {
-        let nilaiA = a[kunci] || '';
-        let nilaiB = b[kunci] || '';
-
-        if (kunci === 'tanggalCatat' || kunci === 'batasWaktu') {
-          nilaiA = new Date(perbaikiTanggal(nilaiA)) || 0;
-          nilaiB = new Date(perbaikiTanggal(nilaiB)) || 0;
-        } else {
-          nilaiA = nilaiA.toString().toLowerCase();
-          nilaiB = nilaiB.toString().toLowerCase();
-        }
-
-        if (nilaiA < nilaiB) return arah === 'asc' ? -1 : 1;
-        if (nilaiA > nilaiB) return arah === 'asc' ? 1 : -1;
-        return 0;
-      });
     }
 
     function tampilkanData(data) {
       if (!data || data.length === 0) {
-        document.getElementById('tabelData').innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Belum ada data pekerjaan</td></tr>`;
+        document.getElementById('tabelData').innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Belum ada data pekerjaan</td></tr>`;
         return;
       }
 
       let html = "";
-      data.forEach(item => {
+      data.forEach((item) => {
         const tglTampil = formatTanggalTampilan(item.tanggalCatat);
         const tglBatasTampil = formatTanggalTampilan(item.batasWaktu);
         const statusClass = `status-${item.statusProses.replace(/ /g, '-')}`;
         const merah = tglBatasTampil < new Date().toISOString().split('T')[0] && item.statusProses !== "Selesai" && item.statusProses !== "Belum Lengkap" ? "text-red-600 font-medium" : "";
         
         html += `
-          <tr class="border-t hover:bg-gray-50">
+          <tr class="border-t hover:bg-gray-50 baris-drag" data-id="${item.id}">
+            <td class="pegangan-drag text-center">
+              <i class="fa fa-bars"></i>
+            </td>
             <td>${tglTampil}</td>
             <td class="kolom-pekerjaan">
               <div class="font-medium">${item.jenisPekerjaan}</div>
@@ -572,6 +541,55 @@
         `;
       });
       document.getElementById('tabelData').innerHTML = html;
+
+      // ✅ Aktifkan fitur Drag & Drop
+      aktifkanDragDrop();
+    }
+
+    function aktifkanDragDrop() {
+      if (sortable) sortable.destroy();
+
+      sortable = new Sortable(document.getElementById('tabelData'), {
+        animation: 200,
+        handle: '.pegangan-drag', // Hanya bisa tarik dari bagian pegangan
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        onEnd: function(evt) {
+          const idAsal = Number(evt.item.dataset.id);
+          const posisiLama = evt.oldIndex;
+          const posisiBaru = evt.newIndex;
+
+          if (posisiLama === posisiBaru) return;
+
+          // Tentukan arah perpindahan
+          const arah = posisiBaru < posisiLama ? 'atas' : 'bawah';
+          const jumlahLangkah = Math.abs(posisiBaru - posisiLama);
+
+          // Kirim perubahan ke Google Sheet
+          pindahkanBarisBertahap(idAsal, arah, jumlahLangkah);
+        }
+      });
+    }
+
+    // ✅ Pindahkan baris sebanyak langkah yang diperlukan
+    function pindahkanBarisBertahap(id, arah, langkah) {
+      if (langkah <= 0) {
+        alert("✅ Urutan berhasil diperbarui!");
+        muatData();
+        return;
+      }
+
+      panggilAPI("geser", { id: id, arah: arah }, (res) => {
+        if (!res.sukses) {
+          alert(res.pesan);
+          muatData();
+          return;
+        }
+        // Lanjutkan langkah berikutnya dengan jeda kecil agar tidak terlalu cepat
+        setTimeout(() => {
+          pindahkanBarisBertahap(id, arah, langkah - 1);
+        }, 150);
+      });
     }
 
     function hapusData(id) {
@@ -583,7 +601,6 @@
       }
     }
 
-    // ✅ FUNGSI EXPORT PDF SUDAH DIPERBAIKI SEPENUHNYA
     function exportKePDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({
@@ -651,7 +668,6 @@
         alternateRowStyles: {
           fillColor: [252, 252, 252]
         },
-        // ✅ Posisi nomor halaman sudah diperbaiki
         didDrawPage: function() {
           doc.setFontSize(8);
           doc.text(`Halaman ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.width - margin.right, doc.internal.pageSize.height - 10, { align: 'right' });
