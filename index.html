@@ -103,6 +103,24 @@
     .btn-export:hover {
       background-color: #059669;
     }
+    /* ✅ Gaya untuk tombol Datasheet */
+    .btn-datasheet {
+      background-color: #4285F4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      text-decoration: none;
+    }
+    .btn-datasheet:hover {
+      background-color: #3367D6;
+      color: white;
+      text-decoration: none;
+    }
 
     .table-container {
       width: 100%;
@@ -195,11 +213,16 @@
       </table>
     </div>
 
-    <!-- Tombol Export di bawah tabel -->
-    <div class="mt-4 flex justify-end">
+    <!-- ✅ Tombol Export + Datasheet -->
+    <div class="mt-4 flex flex-wrap justify-end gap-3">
       <button onclick="exportKePDF()" class="btn-export">
         <i class="fa fa-file-pdf-o"></i> Export ke PDF
       </button>
+      <a href="https://docs.google.com/spreadsheets/d/1O-ofDq0O1lDFa4nv3bbge83qpuo4nC8bLnprVYN_Wyk/edit?usp=sharing" 
+         target="_blank" 
+         class="btn-datasheet">
+        <i class="fa fa-table"></i> Datasheet
+      </a>
     </div>
 
     <!-- Modal Tambah/Edit -->
