@@ -103,7 +103,6 @@
     .btn-export:hover {
       background-color: #059669;
     }
-    /* ✅ Gaya untuk tombol Datasheet */
     .btn-datasheet {
       background-color: #4285F4;
       color: white;
@@ -154,6 +153,84 @@
       color: #6b7280;
     }
 
+    /* ✅ Gaya untuk Animasi Loading Spin */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .loading-overlay.aktif {
+      opacity: 1;
+      visibility: visible;
+    }
+    .loading-box {
+      background: white;
+      padding: 2rem 3rem;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .spin {
+      width: 45px;
+      height: 45px;
+      border: 4px solid #e2e8f0;
+      border-top: 4px solid #165DFF;
+      border-radius: 50%;
+      animation: putar 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes putar {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* ✅ Gaya untuk Notifikasi Keren */
+    .notifikasi {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      min-width: 280px;
+      max-width: 400px;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateX(120%);
+      opacity: 0;
+      transition: all 0.4s ease;
+      z-index: 10000;
+    }
+    .notifikasi.muncul {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .notifikasi.sukses {
+      background: #f0fdf4;
+      border-left: 5px solid #16a34a;
+      color: #166534;
+    }
+    .notifikasi.gagal {
+      background: #fef2f2;
+      border-left: 5px solid #dc2626;
+      color: #991b1b;
+    }
+    .notifikasi.info {
+      background: #eff6ff;
+      border-left: 5px solid #2563eb;
+      color: #1e40af;
+    }
+    .notifikasi i {
+      font-size: 1.25rem;
+    }
+
     @media (max-width: 640px) {
       h1 { font-size: 1.3rem; }
       .modal-content { padding: 1rem; }
@@ -161,10 +238,25 @@
       .aksi-btn-group { gap: 4px; }
       .aksi-btn { width: 30px; height: 30px; font-size: 0.9rem; }
       .kolom-pekerjaan { min-width: 260px; }
+      .notifikasi {
+        right: 10px;
+        left: 10px;
+        max-width: 100%;
+      }
     }
   </style>
 </head>
 <body class="bg-gray-50 p-3 md:p-4">
+  <!-- ✅ Elemen Loading & Notifikasi -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-box">
+      <div class="spin"></div>
+      <p class="text-gray-700 font-medium">Sedang memproses data...</p>
+    </div>
+  </div>
+
+  <div id="notifikasiBox" class="notifikasi"></div>
+
   <div class="max-w-6xl mx-auto">
     <h1 class="text-xl md:text-2xl font-bold text-primary mb-3 md:mb-4 flex items-center gap-2">
       <i class="fa fa-book"></i> Jurnal Operator Dapodik
@@ -213,7 +305,7 @@
       </table>
     </div>
 
-    <!-- ✅ Tombol Export + Datasheet -->
+    <!-- Tombol Export + Datasheet -->
     <div class="mt-4 flex flex-wrap justify-end gap-3">
       <button onclick="exportKePDF()" class="btn-export">
         <i class="fa fa-file-pdf-o"></i> Export ke PDF
@@ -321,8 +413,33 @@
     const GS_URL = "https://script.google.com/macros/s/AKfycbx98RkIEHdih94R5YzYEFR-VfYF9HHz_1l5P8tmiJcfpAADbeFTZWaOT28rS07ncFr6/exec";
     let semuaData = [];
     let sortable;
-    let kolomUrut = "tanggalCatat"; // Default urutan
-    let arahUrut = "desc"; // Default: terbaru ke terlama
+    let kolomUrut = "tanggalCatat";
+    let arahUrut = "desc";
+
+    // ✅ Fungsi Tampil/Sembunyi Loading
+    function tampilLoading() {
+      document.getElementById('loadingOverlay').classList.add('aktif');
+    }
+    function sembunyiLoading() {
+      document.getElementById('loadingOverlay').classList.remove('aktif');
+    }
+
+    // ✅ Fungsi Tampil Notifikasi
+    function tampilNotifikasi(teks, jenis = 'info') {
+      const kotak = document.getElementById('notifikasiBox');
+      kotak.className = `notifikasi ${jenis} muncul`;
+      
+      let ikon = 'fa-info-circle';
+      if (jenis === 'sukses') ikon = 'fa-check-circle';
+      if (jenis === 'gagal') ikon = 'fa-times-circle';
+
+      kotak.innerHTML = `<i class="fa ${ikon}"></i> <span>${teks}</span>`;
+      
+      // Hilang otomatis setelah 3,5 detik
+      setTimeout(() => {
+        kotak.classList.remove('muncul');
+      }, 3500);
+    }
 
     function perbaikiTanggal(tanggalInput) {
       if (!tanggalInput) return "";
@@ -347,11 +464,19 @@
     }
 
     function panggilAPI(aksi, data = {}, callback) {
+      tampilLoading(); // Tampilkan spin saat mulai proses
       const params = new URLSearchParams({ aksi, ...data, callback: "prosesHasilAPI" });
       const script = document.createElement("script");
       script.src = `${GS_URL}?${params.toString()}`;
       document.body.appendChild(script);
-      script.onload = () => document.body.removeChild(script);
+      script.onload = () => {
+        document.body.removeChild(script);
+        sembunyiLoading(); // Sembunyikan spin setelah selesai
+      };
+      script.onerror = () => {
+        sembunyiLoading();
+        tampilNotifikasi("Gagal terhubung ke server!", "gagal");
+      };
       window.prosesHasilAPI = callback;
     }
 
@@ -483,7 +608,7 @@
       if (jenisAkhir === "Lainnya") {
         jenisAkhir = document.getElementById('jenisLainnya').value.trim();
         if (!jenisAkhir) {
-          alert("Silakan sebutkan jenis pekerjaan!");
+          tampilNotifikasi("Silakan sebutkan jenis pekerjaan!", "gagal");
           return;
         }
       }
@@ -501,13 +626,23 @@
 
       if (id) {
         panggilAPI("perbarui", { id: id, ...data }, (res) => {
-          alert(res.pesan);
-          if (res.sukses) { tutupForm(); muatData(); }
+          if (res.sukses) {
+            tutupForm();
+            muatData();
+            tampilNotifikasi(res.pesan, "sukses");
+          } else {
+            tampilNotifikasi(res.pesan, "gagal");
+          }
         });
       } else {
         panggilAPI("simpan", data, (res) => {
-          alert(res.pesan);
-          if (res.sukses) { tutupForm(); muatData(); }
+          if (res.sukses) {
+            tutupForm();
+            muatData();
+            tampilNotifikasi(res.pesan, "sukses");
+          } else {
+            tampilNotifikasi(res.pesan, "gagal");
+          }
         });
       }
     }
@@ -529,19 +664,15 @@
         return cocokUrgensi && cocokStatus;
       });
 
-      // Terapkan pengurutan
       dataTampil = urutkanBerdasarkanKolom(dataTampil, kolomUrut, arahUrut);
-
       tampilkanData(dataTampil);
     }
 
-    // ✅ Fungsi pengurutan data
     function urutkanBerdasarkanKolom(data, kolom, arah) {
       return [...data].sort((a, b) => {
         let nilaiA = a[kolom] || "";
         let nilaiB = b[kolom] || "";
 
-        // Jika kolom tanggal, ubah ke objek Date agar bisa diurutkan dengan benar
         if (kolom === "tanggalCatat" || kolom === "batasWaktu") {
           nilaiA = new Date(perbaikiTanggal(nilaiA)) || 0;
           nilaiB = new Date(perbaikiTanggal(nilaiB)) || 0;
@@ -556,7 +687,6 @@
       });
     }
 
-    // ✅ Fungsi ketika klik header kolom
     function urutkanData(kolom) {
       if (kolomUrut === kolom) {
         arahUrut = arahUrut === "asc" ? "desc" : "asc";
@@ -565,7 +695,6 @@
         arahUrut = "asc";
       }
 
-      // Perbarui ikon pengurutan
       document.querySelectorAll('.ikon-urut').forEach(ikon => ikon.className = "ikon-urut fa fa-sort");
       const ikonAktif = document.getElementById(`icon_${kolom}`);
       ikonAktif.className = arahUrut === "asc" ? "ikon-urut fa fa-sort-asc" : "ikon-urut fa fa-sort-desc";
@@ -616,7 +745,6 @@
         `;
       });
       document.getElementById('tabelData').innerHTML = html;
-
       aktifkanDragDrop();
     }
 
@@ -645,14 +773,14 @@
 
     function pindahkanBarisBertahap(id, arah, langkah) {
       if (langkah <= 0) {
-        alert("✅ Urutan berhasil diperbarui!");
+        tampilNotifikasi("✅ Urutan berhasil diperbarui!", "sukses");
         muatData();
         return;
       }
 
       panggilAPI("geser", { id: id, arah: arah }, (res) => {
         if (!res.sukses) {
-          alert(res.pesan);
+          tampilNotifikasi(res.pesan, "gagal");
           muatData();
           return;
         }
@@ -665,87 +793,96 @@
     function hapusData(id) {
       if (confirm("Yakin ingin menghapus data ini?")) {
         panggilAPI("hapus", { id: id }, (res) => {
-          alert(res.pesan);
-          if (res.sukses) muatData();
+          if (res.sukses) {
+            tampilNotifikasi(res.pesan, "sukses");
+            muatData();
+          } else {
+            tampilNotifikasi(res.pesan, "gagal");
+          }
         });
       }
     }
 
     function exportKePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-      });
+      tampilLoading();
+      setTimeout(() => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: 'a4'
+        });
 
-      const margin = { left: 10, right: 10, top: 35, bottom: 15 };
-      const lebarTabelTersedia = doc.internal.pageSize.width - margin.left - margin.right;
+        const margin = { left: 10, right: 10, top: 35, bottom: 15 };
+        const lebarTabelTersedia = doc.internal.pageSize.width - margin.left - margin.right;
 
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('JURNAL OPERATOR DAPODIK', doc.internal.pageSize.width / 2, 15, { align: 'center' });
-      
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      const tglCetak = new Date().toLocaleDateString('id-ID', {
-        day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-      });
-      doc.text(`Dicetak: ${tglCetak} | Jumlah Data: ${semuaData.length}`, margin.left, 25);
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('JURNAL OPERATOR DAPODIK', doc.internal.pageSize.width / 2, 15, { align: 'center' });
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        const tglCetak = new Date().toLocaleDateString('id-ID', {
+          day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        doc.text(`Dicetak: ${tglCetak} | Jumlah Data: ${semuaData.length}`, margin.left, 25);
 
-      const headers = [
-        ['Tanggal', 'Jenis Pekerjaan', 'Detail Pekerjaan', 'Urgensi', 'Status', 'Batas Waktu', 'Keterangan']
-      ];
+        const headers = [
+          ['Tanggal', 'Jenis Pekerjaan', 'Detail Pekerjaan', 'Urgensi', 'Status', 'Batas Waktu', 'Keterangan']
+        ];
 
-      const body = semuaData.map(item => [
-        formatTanggalTampilan(item.tanggalCatat) || '-',
-        item.jenisPekerjaan || '-',
-        item.detailPekerjaan || '-',
-        item.urgensi || '-',
-        item.statusProses || '-',
-        formatTanggalTampilan(item.batasWaktu) || '-',
-        item.keterangan || 'Tidak ada keterangan'
-      ]);
+        const body = semuaData.map(item => [
+          formatTanggalTampilan(item.tanggalCatat) || '-',
+          item.jenisPekerjaan || '-',
+          item.detailPekerjaan || '-',
+          item.urgensi || '-',
+          item.statusProses || '-',
+          formatTanggalTampilan(item.batasWaktu) || '-',
+          item.keterangan || 'Tidak ada keterangan'
+        ]);
 
-      doc.autoTable({
-        head: headers,
-        body: body,
-        startY: margin.top,
-        margin: margin,
-        tableWidth: 'auto',
-        styles: {
-          fontSize: 8,
-          cellPadding: 3,
-          overflow: 'linebreak',
-          valign: 'top',
-          lineWidth: 0.15,
-          lineColor: [150, 150, 150]
-        },
-        columnStyles: {
-          0: { cellWidth: lebarTabelTersedia * 0.09 },
-          1: { cellWidth: lebarTabelTersedia * 0.12 },
-          2: { cellWidth: lebarTabelTersedia * 0.26 },
-          3: { cellWidth: lebarTabelTersedia * 0.11 },
-          4: { cellWidth: lebarTabelTersedia * 0.14 },
-          5: { cellWidth: lebarTabelTersedia * 0.09 },
-          6: { cellWidth: lebarTabelTersedia * 0.19 }
-        },
-        headStyles: {
-          fillColor: [240, 240, 240],
-          textColor: [0, 0, 0],
-          fontStyle: 'bold'
-        },
-        alternateRowStyles: {
-          fillColor: [252, 252, 252]
-        },
-        didDrawPage: function() {
-          doc.setFontSize(8);
-          doc.text(`Halaman ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.width - margin.right, doc.internal.pageSize.height - 10, { align: 'right' });
-        }
-      });
+        doc.autoTable({
+          head: headers,
+          body: body,
+          startY: margin.top,
+          margin: margin,
+          tableWidth: 'auto',
+          styles: {
+            fontSize: 8,
+            cellPadding: 3,
+            overflow: 'linebreak',
+            valign: 'top',
+            lineWidth: 0.15,
+            lineColor: [150, 150, 150]
+          },
+          columnStyles: {
+            0: { cellWidth: lebarTabelTersedia * 0.09 },
+            1: { cellWidth: lebarTabelTersedia * 0.12 },
+            2: { cellWidth: lebarTabelTersedia * 0.26 },
+            3: { cellWidth: lebarTabelTersedia * 0.11 },
+            4: { cellWidth: lebarTabelTersedia * 0.14 },
+            5: { cellWidth: lebarTabelTersedia * 0.09 },
+            6: { cellWidth: lebarTabelTersedia * 0.19 }
+          },
+          headStyles: {
+            fillColor: [240, 240, 240],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold'
+          },
+          alternateRowStyles: {
+            fillColor: [252, 252, 252]
+          },
+          didDrawPage: function() {
+            doc.setFontSize(8);
+            doc.text(`Halaman ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.width - margin.right, doc.internal.pageSize.height - 10, { align: 'right' });
+          }
+        });
 
-      const namaFile = `Jurnal_Dapodik_${new Date().toISOString().slice(0,10)}.pdf`;
-      doc.save(namaFile);
+        const namaFile = `Jurnal_Dapodik_${new Date().toISOString().slice(0,10)}.pdf`;
+        doc.save(namaFile);
+        sembunyiLoading();
+        tampilNotifikasi("File PDF berhasil diunduh!", "sukses");
+      }, 500);
     }
 
     window.onload = muatData;
